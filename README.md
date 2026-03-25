@@ -10,11 +10,7 @@ Convert IFC building models to a [Linked Building Data](https://w3id.org/bot) gr
 pip install ifctoneo4j
 ```
 
-> **Note:** `ifcopenshell` must be installed separately — it is not on PyPI.
-> Download it from [ifcopenshell.org](https://ifcopenshell.org/downloads) or install via conda:
-> ```bash
-> conda install -c conda-forge ifcopenshell
-> ```
+This will also install `ifcopenshell` and `neo4j` automatically.
 
 For bounding box geometry and interface detection, also install:
 ```bash
