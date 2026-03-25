@@ -1,0 +1,5 @@
+ifcopenshell>=0.7.0
+neo4j>=5.0.0
+# Optional: geometry and interface detection
+# rtree>=1.0.0          # RTree spatial index for interface detection
+# numpy>=1.24.0         # Used by ifcopenshell.geom

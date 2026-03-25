@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# IFC model files (large binaries — don't commit to repo)
+*.ifc
+*.ifczip
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Claude internal
+.claude/

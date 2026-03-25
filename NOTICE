@@ -1,0 +1,9 @@
+ifctoneo4j
+Copyright 2024 Haris
+
+This software is inspired by and based in part on:
+
+  IFCtoLBD (IFC to Linked Building Data Converter)
+  https://github.com/jyrkioraskari/IFCtoLBD
+  Copyright 2017-2024 Jyrki Oraskari
+  Licensed under the Apache License, Version 2.0

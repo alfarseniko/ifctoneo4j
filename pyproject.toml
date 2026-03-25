@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifctoneo4j"
+version = "0.1.0"
+description = "Convert IFC building models to a Linked Building Data graph in Neo4j — no RDF, no Turtle files."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Haris" },
+]
+keywords = ["ifc", "neo4j", "bim", "linked-building-data", "lbd", "bot", "ifcopenshell"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Database",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.10"
+dependencies = [
+  "neo4j>=5.0.0",
+]
+
+[project.optional-dependencies]
+geometry = [
+  "numpy>=1.24.0",
+  "rtree>=1.0.0",
+]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+]
+
+[project.scripts]
+ifctoneo4j = "ifctoneo4j.main:main"
+
+[project.urls]
+Homepage = "https://github.com/alfarseniko/ifctoneo4j"
+Repository = "https://github.com/alfarseniko/ifctoneo4j"
+Issues = "https://github.com/alfarseniko/ifctoneo4j/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ifctoneo4j*"]
+
+[tool.pytest.ini_options]
+testpaths = ["ifctoneo4j/tests"]
