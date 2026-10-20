@@ -94,8 +94,9 @@ class ConversionConfig:
 
     geometry_workers: int = 1
     """
-    Number of parallel workers for ifcopenshell.geom processing.
-    Set > 1 to use multiprocessing for large models.
+    Number of threads used by the ifcopenshell.geom iterator when computing
+    bounding boxes.  1 (default) is single-threaded; set > 1 to speed up large
+    models (memory use grows with the thread count); 0 means all CPU cores.
     """
 
     # ── IFC OWL sameAs ────────────────────────────────────────────────────────
@@ -112,6 +113,10 @@ class ConversionConfig:
         if self.has_interfaces and not self.has_geometry:
             raise ValueError(
                 "has_interfaces=True requires has_geometry=True"
+            )
+        if self.geometry_workers < 0:
+            raise ValueError(
+                f"geometry_workers must be >= 0 (got {self.geometry_workers}); 0 = all CPU cores"
             )
         if self.properties_level not in (1, 2, 3):
             raise ValueError(

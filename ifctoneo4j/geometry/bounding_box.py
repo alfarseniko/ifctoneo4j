@@ -23,6 +23,8 @@ Dependencies (optional — only required when has_geometry=True):
 from __future__ import annotations
 
 import logging
+import os
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -78,9 +80,26 @@ class BoundingBox:
 # Geometry extraction
 # ---------------------------------------------------------------------------
 
+def resolve_threads(workers: int) -> int:
+    """Number of geometry threads for a ``--geometry-workers`` value: N >= 1 as given, 0 = all CPU cores."""
+    if workers < 0:
+        raise ValueError(f"geometry workers must be >= 0 (got {workers})")
+    return workers if workers >= 1 else (os.cpu_count() or 1)
+
+
+def _format_duration(seconds: float) -> str:
+    seconds = int(max(0, seconds))
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+
+
 def compute_bounding_boxes(
     ifc_model,
     seen_guids: Optional[set[str]] = None,
+    num_threads: int = 1,
+    progress_step: float = 5.0,
+    progress_interval: float = 30.0,
 ) -> dict[str, BoundingBox]:
     """
     Compute bounding boxes for all elements in the model using
@@ -91,6 +110,15 @@ def compute_bounding_boxes(
     ifc_model : ifcopenshell.file
     seen_guids : set[str] | None
         If provided, only compute geometry for elements with these GlobalIds.
+    num_threads : int
+        Threads used by the ifcopenshell geometry iterator (default 1 = single
+        threaded, as before).  0 means all CPU cores.  The bounding boxes do not
+        depend on the thread count; only the order in which elements are
+        processed does.
+    progress_step : float
+        Log progress every time it advances by this many percent ...
+    progress_interval : float
+        ... or after this many seconds, whichever comes first.
 
     Returns
     -------
@@ -112,19 +140,36 @@ def compute_bounding_boxes(
     settings.set(settings.WELD_VERTICES, True)
 
     results: dict[str, BoundingBox] = {}
+    threads = resolve_threads(num_threads)
 
     # Use the iterator for efficiency on large models
+    elements = ifc_model.by_type("IfcElement")
     try:
-        it = geom.iterator(settings, ifc_model, include=ifc_model.by_type("IfcElement"))
+        it = geom.iterator(settings, ifc_model, threads, include=elements)
     except Exception:
         # Fallback: iterate manually if the include kwarg is not supported
-        it = geom.iterator(settings, ifc_model)
+        it = geom.iterator(settings, ifc_model, threads)
 
+    logger.info("Computing geometry for %d elements with %d thread(s) ...", len(elements), threads)
     if not it.initialize():
         logger.warning("ifcopenshell.geom iterator failed to initialize.")
         return results
 
+    started = time.monotonic()
+    last_pct, last_log = 0.0, started
+
+    def _report() -> None:
+        nonlocal last_pct, last_log
+        now = time.monotonic()
+        pct = float(it.progress())
+        if pct - last_pct >= progress_step or now - last_log >= progress_interval:
+            elapsed = now - started
+            eta = f", ETA {_format_duration(elapsed * (100 - pct) / pct)}" if pct > 0 else ""
+            logger.info("Geometry %3.0f%% (elapsed %s%s)", pct, _format_duration(elapsed), eta)
+            last_pct, last_log = pct, now
+
     while True:
+        _report()
         shape = it.get()
         elem = ifc_model.by_guid(shape.guid)
         guid = shape.guid
@@ -158,7 +203,8 @@ def compute_bounding_boxes(
         if not it.next():
             break
 
-    logger.info("Computed bounding boxes for %d elements.", len(results))
+    logger.info("Computed bounding boxes for %d elements in %s.",
+                len(results), _format_duration(time.monotonic() - started))
     return results
 
 

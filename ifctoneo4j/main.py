@@ -127,7 +127,9 @@ def run(args) -> int:
         from .geometry.bounding_box import (
             compute_bounding_boxes, attach_geometry_to_nodes, detect_interfaces
         )
-        bbox_map = compute_bounding_boxes(loaded.model, traversal.seen_guids)
+        bbox_map = compute_bounding_boxes(
+            loaded.model, traversal.seen_guids, num_threads=cfg.geometry_workers
+        )
         attach_geometry_to_nodes(traversal.nodes, bbox_map, as_wkt=cfg.has_bounding_box_wkt)
         logger.info("Bounding boxes computed in %.1fs", time.perf_counter() - t2)
 
@@ -283,7 +285,8 @@ def build_parser() -> argparse.ArgumentParser:
     geom.add_argument("--geolocation",   action="store_true",
                       help="Extract IfcSite lat/lon and store as geo:asWKT POINT.")
     geom.add_argument("--geometry-workers", type=int, default=1,
-                      help="Number of parallel geometry processing workers.")
+                      help="Threads for geometry processing (default 1; 0 = all CPU cores). "
+                           "More threads use more memory.")
 
     # Performance
     perf = p.add_argument_group("Performance options")

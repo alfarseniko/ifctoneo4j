@@ -190,7 +190,7 @@ class ConversionConfig:
 | `has_units` | `False` | Attach QUDT unit URIs to numeric properties |
 | `has_non_lbd_element` | `True` | Include elements outside the spatial hierarchy |
 | `batch_size` | `500` | Rows per Neo4j transaction |
-| `geometry_workers` | `1` | Parallel geometry workers |
+| `geometry_workers` | `1` | Threads for geometry (bounding boxes). `1` = single-threaded, `0` = all CPU cores. Memory use grows with the count |
 
 #### `ConversionConfig.validate()`
 
@@ -1438,7 +1438,7 @@ usage: ifc_to_neo4j [-h]
 | `--wkt-bbox` | off | Store bbox as WKT polygon (requires `--geometry`) |
 | `--interfaces` | off | Detect element interfaces (requires `--geometry`) |
 | `--geolocation` | off | Extract site lat/lon as WKT POINT |
-| `--geometry-workers` | `1` | Parallel workers for geometry computation |
+| `--geometry-workers` | `1` | Threads for geometry computation (`0` = all CPU cores). Passed to the ifcopenshell geometry iterator; the resulting bounding boxes do not depend on it. The geometry step logs `Geometry NN% (elapsed, ETA)` while it runs |
 
 ### Performance Options
 

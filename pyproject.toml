@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ifctoneo4j"
-version = "0.1.1"
+version = "0.1.2"
 description = "Convert IFC building models to a Linked Building Data graph in Neo4j — no RDF, no Turtle files."
 readme = "README.md"
 license = { file = "LICENSE" }
