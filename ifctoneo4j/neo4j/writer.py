@@ -132,7 +132,7 @@ def write_nodes(
                 for n in batch
             ]
             try:
-                session.run(cypher, rows=rows)
+                session.run(cypher, rows=rows).consume()
                 total += len(batch)
                 logger.debug(
                     "Wrote %d nodes with labels %s (total so far: %d)",
@@ -193,7 +193,7 @@ def write_relationships(
                 for r in batch
             ]
             try:
-                session.run(cypher, rows=rows)
+                session.run(cypher, rows=rows).consume()
                 total += len(batch)
                 logger.debug(
                     "Wrote %d rels of type %s (total so far: %d)",
@@ -246,7 +246,7 @@ def write_property_nodes(
             }
             for pn in batch
         ]
-        session.run(cypher_prop, rows=rows)
+        session.run(cypher_prop, rows=rows).consume()
         total += len(batch)
 
     # Write L3 State nodes (if any)
@@ -272,7 +272,7 @@ def write_property_nodes(
                 }
                 for pn in batch
             ]
-            session.run(cypher_state, rows=rows)
+            session.run(cypher_state, rows=rows).consume()
 
     # Write element → property relationships
     if prop_rels:
@@ -292,7 +292,7 @@ def write_property_nodes(
                 }
                 for elem_uri, rel_type, prop_uri in batch
             ]
-            session.run(cypher_link, rows=rows)
+            session.run(cypher_link, rows=rows).consume()
 
     return total
 
@@ -339,7 +339,7 @@ def write_interface_nodes(
             }
             for j, (a, b) in enumerate(batch)
         ]
-        session.run(cypher, rows=rows)
+        session.run(cypher, rows=rows).consume()
         total += len(batch)
 
     return total
@@ -378,21 +378,21 @@ class Neo4jWriter:
         result = traversal_result
         counts: dict[str, int] = {}
 
+        # Each batch commits on its own (auto-commit session.run). One transaction around the
+        # whole graph keeps every uncommitted change in Neo4j's transaction memory pool, which
+        # overflows on large models (e.g. sixty5/arc).
         with self.driver.session(database=self.database) as session:
-            with session.begin_transaction() as tx:
-                logger.info("Writing %d nodes …", len(result.nodes))
-                counts["nodes"] = write_nodes(tx, result.nodes, self.batch_size)
+            logger.info("Writing %d nodes …", len(result.nodes))
+            counts["nodes"] = write_nodes(session, result.nodes, self.batch_size)
 
             logger.info("Writing %d relationships …", len(result.rels))
-            with session.begin_transaction() as tx:
-                counts["rels"] = write_relationships(tx, result.rels, self.batch_size)
+            counts["rels"] = write_relationships(session, result.rels, self.batch_size)
 
             if result.prop_nodes:
                 logger.info("Writing %d property nodes …", len(result.prop_nodes))
-                with session.begin_transaction() as tx:
-                    counts["prop_nodes"] = write_property_nodes(
-                        tx, result.prop_nodes, result.prop_rels, self.batch_size
-                    )
+                counts["prop_nodes"] = write_property_nodes(
+                    session, result.prop_nodes, result.prop_rels, self.batch_size
+                )
 
         logger.info(
             "Write complete — nodes:%d  rels:%d  prop_nodes:%d",
@@ -405,8 +405,7 @@ class Neo4jWriter:
     def write_interfaces(self, interfaces: list[tuple[str, str]], base_uri: str) -> int:
         """Write interface nodes and relationships."""
         with self.driver.session(database=self.database) as session:
-            with session.begin_transaction() as tx:
-                return write_interface_nodes(tx, interfaces, base_uri, self.batch_size)
+            return write_interface_nodes(session, interfaces, base_uri, self.batch_size)
 
     def close(self) -> None:
         """Close the underlying Neo4j driver."""
